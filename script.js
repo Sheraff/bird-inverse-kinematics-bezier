@@ -138,15 +138,14 @@ function updateBird(mousePos, bird, dt, time, ctx) {
 	// Update head
 	{
 		// bird.head.pos.x = bird.pos.x + bird.direction * BODY_RADIUS / 2
+		bird.head.pos.y = ctx.canvas.height - (UPPER_ARM_LENGTH + FOREARM_LENGTH) * .9 - (UPPER_ARM_LENGTH + FOREARM_LENGTH) * .75 + Math.sin(time / 500 - 300) * 3
 		if (bird.head.lerp) {
 			const t = (time - bird.head.lerp.start) / (bird.head.lerp.end - bird.head.lerp.start)
 			if(t >= 1) {
-				bird.head.pos.y = bird.head.lerp.from.y
 				bird.head.pos.x = bird.head.lerp.to.x
 				bird.head.lerp = null
 			} else {
 				bird.head.pos.x = lerp(bird.head.lerp.from.x, bird.head.lerp.to.x, t)
-				bird.head.pos.y = lerp(bird.head.lerp.from.y, bird.head.lerp.to.y, t, easeSin)
 			}
 		} else if ((bird.head.pos.x - bird.pos.x) * bird.direction < - BODY_RADIUS / 3) {
 			bird.head.lerp = {
