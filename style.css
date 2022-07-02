@@ -1,0 +1,22 @@
+body {
+	margin: 0;
+	background: #444;
+	color: white;
+}
+
+canvas {
+	box-shadow: 0 0 0 1px black;
+	width: 100vw;
+	height: 100vh;
+}
+
+form {
+	position: fixed;
+	top: 1em;
+	left: 1em;
+}
+
+label {
+	display: block;
+	margin: .5em 0;
+}
