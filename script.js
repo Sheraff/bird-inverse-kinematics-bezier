@@ -8,7 +8,6 @@ const FOOT_HEIGHT = 6
 const BODY_RADIUS = 22
 const BEAK_LENGTH = 40
 const STEP_DURATION = 400
-const SHOW_GEOMETRY = true
 
 const canvas = document.querySelector('canvas')
 if(!canvas)
@@ -21,10 +20,16 @@ const ctx = canvas.getContext('2d')
 if(!ctx)
 	throw new Error('No context found')
 
+const form = document.querySelector('form')
+if(!form)
+	throw new Error('No form found')
+
 /**
  * @param {CanvasRenderingContext2D} ctx
  */
 void function (ctx) {
+	const formData = getFormData(form)
+
 	const startX = ctx.canvas.width / 2
 	const startY = ctx.canvas.height - (UPPER_ARM_LENGTH + FOREARM_LENGTH) * .9
 	/** @type {Bird} */
@@ -58,9 +63,22 @@ void function (ctx) {
 	}
 	/** @type {Vector} */
 	const mousePos = new Vector(bird.pos.x + 1, bird.pos.y)
+	ui(form, formData)
 	update(ctx, mousePos, bird)
-	draw(ctx, mousePos, bird)
+	draw(ctx, mousePos, bird, formData)
 }(ctx)
+
+function getFormData(form) {
+	return {
+		geometry: form.elements.geometry.checked,
+	}
+}
+
+function ui(form, formData) {
+	form.addEventListener('input', () => {
+		Object.assign(formData, getFormData(form))
+	})
+}
 
 
 /**
@@ -80,7 +98,7 @@ function update(ctx, mousePos, bird) {
  * @param {Vector} mousePos
  * @param {Bird} bird
  */
-function draw(ctx, mousePos, bird) {
+function draw(ctx, mousePos, bird, formData) {
 	/**
 	 * @param {number} lastTime
 	 */
@@ -89,7 +107,7 @@ function draw(ctx, mousePos, bird) {
 			const delta = lastTime ? time - lastTime : 0
 			updateBird(mousePos, bird, delta, time, ctx)
 			ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
-			drawBird(ctx, bird, mousePos)
+			drawBird(ctx, bird, mousePos, formData)
 			loop(time)
 		})
 	}
@@ -216,7 +234,7 @@ function updateBird(mousePos, bird, dt, time, ctx) {
  * @param {CanvasRenderingContext2D} ctx
  * @param {Bird} bird
  */
-function drawBird(ctx, bird, mousePos) {
+function drawBird(ctx, bird, mousePos, formData) {
 	const primary = '#777'
 	const secondary = '#111'
 
@@ -246,7 +264,7 @@ function drawBird(ctx, bird, mousePos) {
 		ctx.closePath()
 		ctx.fill()
 
-		if(SHOW_GEOMETRY) {
+		if(formData.geometry) {
 			const strokeStyle = ctx.strokeStyle
 			const lineWidth = ctx.lineWidth
 			ctx.lineWidth = 1
@@ -282,7 +300,7 @@ function drawBird(ctx, bird, mousePos) {
 		const neckCurve = new Curve(sternumPoint, napePoint)
 		neckCurve.draw(ctx)
 
-		if(SHOW_GEOMETRY) {
+		if(formData.geometry) {
 			const strokeStyle = ctx.strokeStyle
 			const lineWidth = ctx.lineWidth
 			const fillStyle = ctx.fillStyle
