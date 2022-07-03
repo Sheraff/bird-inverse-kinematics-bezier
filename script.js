@@ -390,6 +390,20 @@ function drawBird(ctx, bird, mousePos, formData) {
 		ctx.lineTo(bird.pos.x, bird.pos.y + BODY_RADIUS)
 		ctx.closePath()
 		ctx.fill()
+
+		if(formData.geometry) {
+			const strokeStyle = ctx.strokeStyle
+			const lineWidth = ctx.lineWidth
+			ctx.lineWidth = 1
+			ctx.strokeStyle = '#fa05'
+			ctx.beginPath()
+			ctx.moveTo(bird.pos.x, bird.pos.y)
+			ctx.lineTo(bird.pos.x + bird.speed * 10, bird.pos.y)
+			ctx.stroke()
+			ctx.strokeStyle = strokeStyle
+			ctx.lineWidth = lineWidth
+			console.log(bird.speed * 10)
+		}
 	}
 }
 
