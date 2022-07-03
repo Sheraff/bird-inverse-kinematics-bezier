@@ -33,7 +33,7 @@ void function (ctx) {
 	const formData = getFormData(form)
 
 	const startX = ctx.canvas.width / 2
-	const startY = ctx.canvas.height - (UPPER_ARM_LENGTH + FOREARM_LENGTH) * .9
+	const startY = ctx.canvas.height - (UPPER_ARM_LENGTH + FOREARM_LENGTH) * .8
 	/** @type {Bird} */
 	const bird = {
 		direction: 1,
@@ -189,19 +189,19 @@ function updateBird(mousePos, bird, dt, time, ctx) {
 		if(Math.abs(mouseDelta) > 50) {
 			const maxSpeedImpulse = 150 + Math.max(0, Math.abs(bird.speed) - 4) * 50
 			const clampedMouseDelta = Math.sign(mouseDelta) * Math.min(maxSpeedImpulse, Math.abs(mouseDelta))
-			bird.speed += clampedMouseDelta / 8 * groundedCount * dt / 1000
+			bird.speed += clampedMouseDelta / 8 * groundedCount**1.5 * dt / 1000
 		}
 	}
-	bird.speed = Math.min(BIRD_MAX_SPEED, bird.speed)
+	bird.speed = Math.sign(bird.speed) * Math.min(BIRD_MAX_SPEED, Math.abs(bird.speed))
 	const direction = Math.sign(bird.speed) || bird.direction
 	const reverse = bird.direction !== direction
-	const isRunning = Math.abs(bird.speed) >= 4.5
+	const isRunning = Math.abs(bird.speed) >= 7
 
 	// Update body
 	{
 		bird.pos.x += bird.speed
 		bird.direction = direction
-		bird.pos.y = ctx.canvas.height - (UPPER_ARM_LENGTH + FOREARM_LENGTH) * .9 - Math.sin(time / 500) * 5 + Math.abs(bird.speed) * 3
+		bird.pos.y = ctx.canvas.height - (UPPER_ARM_LENGTH + FOREARM_LENGTH) * .8 - Math.sin(time / 500) * 5 + Math.abs(bird.speed) * 3
 		bird.shoulder.x = bird.pos.x - bird.direction * BODY_RADIUS / 2
 		bird.shoulder.y = bird.pos.y + BODY_RADIUS
 	}
@@ -233,17 +233,21 @@ function updateBird(mousePos, bird, dt, time, ctx) {
 					)
 				)
 			) {
-				const end = distanceToShoulder > .98 * (UPPER_ARM_LENGTH + FOREARM_LENGTH)
-					? time + STEP_DURATION
-					: other.lerp
-						? time + STEP_DURATION / Math.max(1, Math.abs(bird.speed) / 3)
-						: time + STEP_DURATION / Math.max(1, Math.abs(bird.speed) / 4)
+				let end
+				if (distanceToShoulder > .95 * (UPPER_ARM_LENGTH + FOREARM_LENGTH)) {
+					end = time + STEP_DURATION / Math.max(1, Math.abs(bird.speed) / 3)
+					// if(!isRunning)
+					// 	end = time + STEP_DURATION / Math.max(1, Math.abs(bird.speed) / 3) // favor running
+					// else
+					// 	end = time + STEP_DURATION / Math.max(1, Math.abs(bird.speed) / 5) // favor jumping
+				} else
+					end = time + STEP_DURATION / Math.max(1, Math.abs(bird.speed) / 4)
 				foot.lerp = {
 					start: time,
 					end,
 					from: new Vector(foot.pos.x, ctx.canvas.height - FOOT_HEIGHT),
 					to: new Vector(
-						bird.shoulder.x - bird.direction * BODY_RADIUS * (-1 + Math.abs(bird.speed / 5)),
+						bird.shoulder.x + bird.direction * BODY_RADIUS * (1 - Math.abs(bird.speed / 5)),
 						ctx.canvas.height - FOOT_HEIGHT - 30 + Math.abs(bird.speed),
 					),
 					meta: {
