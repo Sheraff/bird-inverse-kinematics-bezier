@@ -5,6 +5,7 @@ type Bird = {
 	pos: Vector
 	feet: [Foot, Foot]
 	head: Head
+	shoulder: Vector
 }
 
 type Foot = {
@@ -24,4 +25,5 @@ type Lerp = {
 	end: number
 	from: Vector
 	to: Vector
+	meta: any
 }

@@ -7,7 +7,7 @@ const FOREARM_LENGTH = 70
 const FOOT_HEIGHT = 6
 const BODY_RADIUS = 22
 const BEAK_LENGTH = 40
-const STEP_DURATION = 700
+const STEP_DURATION = 400
 
 const canvas = document.querySelector('canvas')
 if(!canvas)
@@ -41,11 +41,15 @@ void function (ctx) {
 			},
 		],
 		head: {
-			pos: new Vector(startX + BODY_RADIUS / 2, startY - (UPPER_ARM_LENGTH + FOREARM_LENGTH) * .75),
+			pos: new Vector(startX + BODY_RADIUS, startY - (UPPER_ARM_LENGTH + FOREARM_LENGTH) * .75),
 			nape: new Vector(-BODY_RADIUS * 2, (UPPER_ARM_LENGTH + FOREARM_LENGTH) * .2),
 			sternum: new Vector(-BODY_RADIUS * 2, BODY_RADIUS * 2),
 			lerp: null,
-		}
+		},
+		shoulder: new Vector(
+			startX - 1 * BODY_RADIUS / 2,
+			startY + BODY_RADIUS
+		)
 	}
 	/** @type {Vector} */
 	const mousePos = new Vector(bird.pos.x, bird.pos.y)
@@ -101,61 +105,120 @@ function updateBird(mousePos, bird, dt, time, ctx) {
 	{
 		bird.pos.x += speed
 		bird.direction = Math.sign(speed)
-		bird.pos.y = ctx.canvas.height - (UPPER_ARM_LENGTH + FOREARM_LENGTH) * .9 - Math.sin(time / 500) * 5 + Math.abs(speed) * 2
+		bird.pos.y = ctx.canvas.height - (UPPER_ARM_LENGTH + FOREARM_LENGTH) * .9 - Math.sin(time / 500) * 5 + Math.abs(speed) * 3
+		bird.shoulder.x = bird.pos.x - bird.direction * BODY_RADIUS / 2
+		bird.shoulder.y = bird.pos.y + BODY_RADIUS
 	}
 
 	// Update feet
 	{
-		const lerpingFoot = bird.feet.find(foot => foot.lerp)
-		if (lerpingFoot) {
-			const t = (time - lerpingFoot.lerp.start) / (lerpingFoot.lerp.end - lerpingFoot.lerp.start)
-			if(t >= 1) {
-				lerpingFoot.pos.y = lerpingFoot.lerp.from.y
-				lerpingFoot.pos.x = lerpingFoot.lerp.to.x
-				lerpingFoot.lerp = null
-			} else {
-				lerpingFoot.pos.x = lerp(lerpingFoot.lerp.from.x, lerpingFoot.lerp.to.x, t)
-				lerpingFoot.pos.y = lerp(lerpingFoot.lerp.from.y, lerpingFoot.lerp.to.y, t, easeSin)
-			}
-		} else {
-			const furthest = (bird.feet[0].pos.x < bird.feet[1].pos.x) === (bird.direction === 1)
-				? bird.feet[0]
-				: bird.feet[1]
-			if (Math.abs(furthest.pos.x - bird.pos.x) > BODY_RADIUS) {
-				furthest.lerp = {
+		// if (Math.abs(speed) > 5 || !bird.feet.some(foot => foot.lerp)) {
+		// 	const which = (bird.feet[0].pos.x < bird.feet[1].pos.x) === (bird.direction === 1)
+		// 	const furthest = which ? bird.feet[0] : bird.feet[1]
+		// 	const other = which ? bird.feet[1] : bird.feet[0]
+		// 	if (
+		// 		!furthest.lerp
+		// 		&& (
+		// 			bird.shoulder.dist(furthest.pos) > .9 * (UPPER_ARM_LENGTH + FOREARM_LENGTH)
+		// 			|| (
+		// 				(!other.lerp || time - other.lerp.start > 0.9 * (other.lerp.end - other.lerp.start))
+		// 				// && !other.lerp
+		// 				&& Math.abs(bird.shoulder.x - furthest.pos.x) > BODY_RADIUS * 2
+		// 				&& bird.shoulder.dist(furthest.pos) > (UPPER_ARM_LENGTH + FOREARM_LENGTH) * Math.min(1, Math.abs(speed) / 10)
+		// 			)
+		// 		)
+		// 	) {
+		// 		furthest.lerp = {
+		// 			start: time,
+		// 			end: time + STEP_DURATION / Math.max(1, Math.abs(speed) / 4),
+		// 			from: new Vector(furthest.pos.x, furthest.pos.y),
+		// 			to: new Vector(
+		// 				bird.pos.x - bird.direction * BODY_RADIUS * 1 * Math.abs(speed / 10),
+		// 				furthest.pos.y - 30 + Math.abs(speed),
+		// 			),
+		// 			meta: {
+		// 				bodyX: bird.pos.x,
+		// 			}
+		// 		}
+		// 	}
+		// }
+		const furthest = (bird.feet[0].pos.x < bird.feet[1].pos.x) === (bird.direction === 1)
+			? 0 : 1
+		bird.feet.forEach((foot, i) => {
+			const other = bird.feet[i === 0 ? 1 : 0]
+			const distanceToShoulder = bird.shoulder.dist(foot.pos)
+			if (
+				!foot.lerp
+				&& (
+					distanceToShoulder > .98 * (UPPER_ARM_LENGTH + FOREARM_LENGTH)
+					|| (
+						Math.abs(speed) < 6
+						&& i === furthest
+						&& !other.lerp
+						&& Math.abs(bird.shoulder.x - foot.pos.x) > BODY_RADIUS * 2
+					)
+					|| (
+						Math.abs(speed) >= 6
+						&& (
+							!other.lerp
+							|| time - other.lerp.start > 0.8 * (other.lerp.end - other.lerp.start)
+						)
+						&& distanceToShoulder > (UPPER_ARM_LENGTH + FOREARM_LENGTH) * Math.min(1, Math.abs(speed) / 7)
+					)
+				)
+			) {
+				foot.lerp = {
 					start: time,
-					end: time + STEP_DURATION / Math.max(1, Math.abs(speed)),
-					from: new Vector(furthest.pos.x, furthest.pos.y),
+					end: time + STEP_DURATION / Math.max(1, Math.abs(speed) / 4),
+					from: new Vector(foot.pos.x, ctx.canvas.height - FOOT_HEIGHT),
 					to: new Vector(
-						bird.pos.x + bird.direction * BODY_RADIUS * 2 * Math.max(1, Math.abs(speed / 2)),
-						furthest.pos.y - 10 + Math.abs(speed),
+						bird.shoulder.x - bird.direction * BODY_RADIUS * (-1 + Math.abs(speed / 5)),
+						ctx.canvas.height - FOOT_HEIGHT - 30 + Math.abs(speed),
 					),
+					meta: {
+						bodyX: bird.pos.x,
+					}
 				}
 			}
-		}
+			if(foot.lerp) {
+				const t = (time - foot.lerp.start) / (foot.lerp.end - foot.lerp.start)
+				if(t >= 1) {
+					foot.pos.x = (bird.pos.x - foot.lerp.meta.bodyX) + foot.lerp.to.x
+					foot.pos.y = foot.lerp.from.y
+					foot.lerp = null
+				} else {
+					foot.pos.x = (bird.pos.x - foot.lerp.meta.bodyX) + lerp(foot.lerp.from.x, foot.lerp.to.x, t)
+					foot.pos.y = lerp(foot.lerp.from.y, foot.lerp.to.y, t, easeSin)
+				}
+			}
+		})
 	}
 
 	// Update head
 	{
-		// bird.head.pos.x = bird.pos.x + bird.direction * BODY_RADIUS / 2
-		bird.head.pos.y = ctx.canvas.height - (UPPER_ARM_LENGTH + FOREARM_LENGTH) * .9 - (UPPER_ARM_LENGTH + FOREARM_LENGTH) * .75 + Math.sin(time / 500 - 300) * 3
+		bird.head.pos.y = bird.pos.y - (UPPER_ARM_LENGTH + FOREARM_LENGTH) * .75 + Math.sin(time / 500 - 300) * 7 + Math.abs(speed) * 3
+		bird.head.nape.x = -BODY_RADIUS * 3 + BODY_RADIUS * Math.min(1, Math.abs(speed) / 4)
+		bird.head.nape.y = (UPPER_ARM_LENGTH + FOREARM_LENGTH) * .3 - (UPPER_ARM_LENGTH + FOREARM_LENGTH) * .1 * Math.max(1, Math.abs(speed) / 4)
+		bird.head.sternum.x = -BODY_RADIUS * 3 + BODY_RADIUS * Math.min(1, Math.abs(speed) / 4)
+		bird.head.sternum.y = BODY_RADIUS * 3 - BODY_RADIUS * Math.min(1, Math.abs(speed) / 4)
 		if (bird.head.lerp) {
 			const t = (time - bird.head.lerp.start) / (bird.head.lerp.end - bird.head.lerp.start)
 			if(t >= 1) {
-				bird.head.pos.x = bird.head.lerp.to.x
 				bird.head.lerp = null
 			} else {
 				bird.head.pos.x = lerp(bird.head.lerp.from.x, bird.head.lerp.to.x, t)
 			}
-		} else if ((bird.head.pos.x - bird.pos.x) * bird.direction < - BODY_RADIUS / 3) {
+		} else if (Math.abs(speed) < 6 && (bird.head.pos.x - bird.pos.x) * bird.direction < 0) {
 			bird.head.lerp = {
 				start: time,
 				end: time + STEP_DURATION / Math.max(1, Math.abs(speed)),
-				from: new Vector(bird.head.pos.x, bird.head.pos.y),
-				to: new Vector(
-					bird.pos.x + bird.direction * BODY_RADIUS * 2 * Math.max(1, Math.abs(speed / 2)),
-					bird.head.pos.y,
-				),
+				from: new Vector(bird.head.pos.x, 0),
+				to: new Vector(bird.pos.x + bird.direction * BODY_RADIUS * 3, 0),
+			}
+		} else if(Math.abs(speed) >= 6) {
+			bird.head.pos.x += speed + (dt / 1000) * (speed) * Math.abs(bird.head.pos.x - bird.pos.x)
+			if (bird.head.pos.dist(bird.pos) > BODY_RADIUS * 6) {
+				bird.head.pos.x = bird.pos.x + bird.direction * Math.sqrt((BODY_RADIUS * 6)**2 - (bird.head.pos.y - bird.pos.y)**2)
 			}
 		}
 	}
@@ -175,15 +238,11 @@ function drawBird(ctx, bird) {
 
 	// legs
 	ctx.lineWidth = 4
-	const shoulder = new Vector(
-		bird.pos.x - bird.direction * BODY_RADIUS / 2,
-		bird.pos.y + BODY_RADIUS
-	)
 	bird.feet.forEach(foot => {
-		const elbow = inverseKinematicsWithTwoJoints(shoulder, foot.pos, UPPER_ARM_LENGTH, FOREARM_LENGTH, -bird.direction)
+		const elbow = inverseKinematicsWithTwoJoints(bird.shoulder, foot.pos, UPPER_ARM_LENGTH, FOREARM_LENGTH, -bird.direction)
 		// arms
 		ctx.beginPath()
-		ctx.moveTo(shoulder.x, shoulder.y)
+		ctx.moveTo(bird.shoulder.x, bird.shoulder.y)
 		ctx.lineTo(elbow.x, elbow.y)
 		ctx.lineTo(foot.pos.x, foot.pos.y)
 		ctx.stroke()
