@@ -402,7 +402,6 @@ function drawBird(ctx, bird, mousePos, formData) {
 			ctx.stroke()
 			ctx.strokeStyle = strokeStyle
 			ctx.lineWidth = lineWidth
-			console.log(bird.speed * 10)
 		}
 	}
 }
