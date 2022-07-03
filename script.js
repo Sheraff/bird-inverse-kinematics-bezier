@@ -8,7 +8,8 @@ const FOOT_HEIGHT = 6
 const BODY_RADIUS = 22
 const BEAK_LENGTH = 40
 const STEP_DURATION = 400
-const SPEED = 1
+const WORLD_TIME_SPEED = 1
+const BIRD_MAX_SPEED = 12
 
 const canvas = document.querySelector('canvas')
 if(!canvas)
@@ -64,10 +65,10 @@ void function (ctx) {
 		),
 	}
 
-	const markers = [
-		new Vector(ctx.canvas.width + 5, ctx.canvas.height / 2),
-		new Vector(-5, ctx.canvas.height / 2),
-	]
+	const markers = []
+	for(let i = 0; i < ctx.canvas.width; i+=ctx.canvas.width / 20) {
+		markers.push(new Vector(i, ctx.canvas.height / 2))
+	}
 
 	/** @type {Vector} */
 	const mousePos = new Vector(bird.pos.x + 1, bird.pos.y)
@@ -101,7 +102,7 @@ function update(ctx, mousePos, bird, markers) {
 	})
 	function loop(lastTime) {
 		requestAnimationFrame((time) => {
-			const modifiedTime = time * SPEED
+			const modifiedTime = time * WORLD_TIME_SPEED
 			const delta = lastTime ? modifiedTime - lastTime : 0
 			updateBird(mousePos, bird, delta, modifiedTime, ctx)
 
@@ -135,14 +136,13 @@ function update(ctx, mousePos, bird, markers) {
 					bird.neck.x -= offset
 
 					// markers
+					markers.speedRatio = Math.abs(offset / BIRD_MAX_SPEED)
 					markers.forEach(marker => {
-						marker.x -= offset
-						if(marker.x < - ctx.canvas.width / 2) {
-							marker.x += ctx.canvas.width * 2
-						} else if(marker.x > ctx.canvas.width * 3 / 2) {
-							marker.x -= ctx.canvas.width * 2
-						}
+						marker.x += ctx.canvas.width - offset
+						marker.x %= ctx.canvas.width
 					})
+				} else {
+					markers.speedRatio = 0
 				}
 			}
 
@@ -162,6 +162,7 @@ function draw(ctx, mousePos, bird, markers, formData) {
 		requestAnimationFrame(() => {
 			ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
 			drawBird(ctx, bird, mousePos, formData)
+			ctx.fillStyle = `#777${(Math.floor(markers.speedRatio * 16)).toString(16)}`
 			markers.forEach((vec) => {
 				ctx.beginPath()
 				ctx.arc(vec.x, vec.y, 5, 0, Math.PI * 2)
@@ -191,7 +192,7 @@ function updateBird(mousePos, bird, dt, time, ctx) {
 			bird.speed += clampedMouseDelta / 8 * groundedCount * dt / 1000
 		}
 	}
-	bird.speed = Math.min(12, bird.speed)
+	bird.speed = Math.min(BIRD_MAX_SPEED, bird.speed)
 	const direction = Math.sign(bird.speed) || bird.direction
 	const reverse = bird.direction !== direction
 	const isRunning = Math.abs(bird.speed) >= 4.5
@@ -295,12 +296,12 @@ function updateBird(mousePos, bird, dt, time, ctx) {
 		} else if (!isRunning && headIsBehind) {
 			bird.head.lerp = {
 				start: time,
-				end: time + STEP_DURATION / Math.max(1, Math.abs(bird.speed)),
+				end: time + STEP_DURATION / Math.max(1, Math.abs(bird.speed) / 2),
 				from: new Vector(bird.head.pos.x, 0),
-				to: new Vector(bird.pos.x + bird.direction * BODY_RADIUS * (3 + Math.abs(bird.speed / 10)), 0),
+				to: new Vector(bird.head.pos.x + bird.direction * BODY_RADIUS * (4 + Math.abs(bird.speed / 10)), 0),
 			}
 		} else if(isRunning || headIsBehind) {
-			bird.head.pos.x += bird.speed + (dt / 1000) * 1.1 * (bird.speed) * Math.abs(bird.head.pos.x - bird.pos.x)
+			bird.head.pos.x += bird.speed + (dt / 1000) * (bird.speed) * Math.abs(bird.head.pos.x - bird.pos.x)
 			if (bird.head.pos.dist(bird.pos) > BODY_RADIUS * 5.5) {
 				bird.head.pos.x = bird.pos.x + bird.direction * Math.sqrt((BODY_RADIUS * 5.5)**2 - (bird.head.pos.y - bird.pos.y)**2)
 			}
