@@ -351,24 +351,26 @@ function drawBird(ctx, bird, mousePos, formData) {
 		ctx.arc(bird.head.pos.x, bird.head.pos.y, headRadius, 0, 2 * Math.PI)
 		ctx.fill()
 		// beak
-		const angleToMouse = Math.atan2(mousePos.y - bird.head.pos.y, mousePos.x - bird.head.pos.x) + (bird.direction === -1 ? Math.PI : 0)
+		const angleToMouse = (Math.atan2(mousePos.y - bird.head.pos.y, mousePos.x - bird.head.pos.x) + Math.PI * 2) % (Math.PI * 2)
 		const beakAngle = bird.direction === -1
-			? angleToMouse < Math.PI ? Math.min(Math.PI / 4, angleToMouse) : Math.max(7 * Math.PI / 4, angleToMouse)
-			: Math.max(-Math.PI / 4, Math.min(Math.PI / 4, angleToMouse))
+			? Math.max(Math.PI * 3 / 4, Math.min(Math.PI * 5 / 4, angleToMouse))
+			: angleToMouse < Math.PI ? Math.min(Math.PI / 4, angleToMouse) : Math.max(Math.PI * 7 / 4, angleToMouse)
 		ctx.save()
 		ctx.translate(bird.head.pos.x, bird.head.pos.y)
 		ctx.rotate(beakAngle)
 		ctx.beginPath()
 		ctx.moveTo(0, 0 - headRadius / 2)
-		ctx.lineTo(bird.direction * (headRadius + BEAK_LENGTH), 0)
+		ctx.lineTo(headRadius + BEAK_LENGTH, 0)
 		ctx.lineTo(0, 0 + headRadius / 2)
 		ctx.closePath()
 		ctx.fill()
 		ctx.restore()
 		// eye
+		const eyeOffsetX = Math.cos(angleToMouse) * headRadius / 2 + bird.head.pos.x
+		const eyeOffsetY = Math.sin(angleToMouse) * headRadius / 2 + bird.head.pos.y
 		ctx.fillStyle = secondary
 		ctx.beginPath()
-		ctx.arc(bird.head.pos.x, bird.head.pos.y, headRadius / 3, 0, 2 * Math.PI)
+		ctx.arc(eyeOffsetX, eyeOffsetY, headRadius / 3, 0, 2 * Math.PI)
 		ctx.fill()
 		ctx.fillStyle = primary
 	}
