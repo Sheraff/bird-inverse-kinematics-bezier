@@ -134,6 +134,7 @@ function updateBird(mousePos, bird, dt, time, ctx) {
 	bird.speed = Math.min(10, bird.speed)
 	const direction = Math.sign(bird.speed) || bird.direction
 	const reverse = bird.direction !== direction
+	const isRunning = Math.abs(bird.speed) >= 7
 
 	// Update body
 	{
@@ -157,13 +158,13 @@ function updateBird(mousePos, bird, dt, time, ctx) {
 				&& (
 					distanceToShoulder > .98 * (UPPER_ARM_LENGTH + FOREARM_LENGTH)
 					|| (
-						Math.abs(bird.speed) < 6
+						!isRunning
 						&& i === furthest
 						&& !other.lerp
 						&& Math.abs(bird.shoulder.x - foot.pos.x) > BODY_RADIUS * 2
 					)
 					|| (
-						Math.abs(bird.speed) >= 6
+						isRunning
 						&& (
 							!other.lerp
 							|| time - other.lerp.start > 0.8 * (other.lerp.end - other.lerp.start)
@@ -218,19 +219,19 @@ function updateBird(mousePos, bird, dt, time, ctx) {
 		bird.neck.y = bird.pos.y - BODY_RADIUS * Math.sin(Math.PI / 3 * neckSpeedCoef)
 		if (bird.head.lerp) {
 			const t = (time - bird.head.lerp.start) / (bird.head.lerp.end - bird.head.lerp.start)
-			if(t >= 1) {
+			if(t >= 1 || isRunning) {
 				bird.head.lerp = null
 			} else {
 				bird.head.pos.x = lerp(bird.head.lerp.from.x, bird.head.lerp.to.x, t)
 			}
-		} else if (Math.abs(bird.speed) < 6 && (bird.head.pos.x - bird.pos.x) * bird.direction < 0) {
+		} else if (!isRunning && (bird.head.pos.x - bird.pos.x) * bird.direction < 0) {
 			bird.head.lerp = {
 				start: time,
 				end: time + STEP_DURATION / Math.max(1, Math.abs(bird.speed)),
 				from: new Vector(bird.head.pos.x, 0),
 				to: new Vector(bird.pos.x + bird.direction * BODY_RADIUS * (3 + Math.abs(bird.speed / 10)), 0),
 			}
-		} else if(Math.abs(bird.speed) >= 6) {
+		} else if(isRunning) {
 			bird.head.pos.x += bird.speed + (dt / 1000) * (bird.speed) * Math.abs(bird.head.pos.x - bird.pos.x)
 			if (bird.head.pos.dist(bird.pos) > BODY_RADIUS * 6) {
 				bird.head.pos.x = bird.pos.x + bird.direction * Math.sqrt((BODY_RADIUS * 6)**2 - (bird.head.pos.y - bird.pos.y)**2)
