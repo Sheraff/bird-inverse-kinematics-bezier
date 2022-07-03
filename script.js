@@ -8,7 +8,7 @@ const FOOT_HEIGHT = 6
 const BODY_RADIUS = 22
 const BEAK_LENGTH = 40
 const STEP_DURATION = 400
-const SPEED = 0.9
+const SPEED = 1
 
 const canvas = document.querySelector('canvas')
 if(!canvas)
@@ -130,13 +130,15 @@ function updateBird(mousePos, bird, dt, time, ctx) {
 	if (groundedCount > 0) {
 		const mouseDelta = mousePos.x - bird.pos.x
 		if(Math.abs(mouseDelta) > 100) {
-			bird.speed += (mouseDelta) / 8 * groundedCount * dt / 1000
+			const maxSpeedImpulse = 150 + Math.max(0, Math.abs(bird.speed) - 4) * 50
+			const clampedMouseDelta = Math.sign(mouseDelta) * Math.min(maxSpeedImpulse, Math.abs(mouseDelta))
+			bird.speed += clampedMouseDelta / 8 * groundedCount * dt / 1000
 		}
 	}
-	bird.speed = Math.min(10, bird.speed)
+	bird.speed = Math.min(12, bird.speed)
 	const direction = Math.sign(bird.speed) || bird.direction
 	const reverse = bird.direction !== direction
-	const isRunning = Math.abs(bird.speed) >= 6.5
+	const isRunning = Math.abs(bird.speed) >= 4.5
 
 	// Update body
 	{
@@ -155,8 +157,7 @@ function updateBird(mousePos, bird, dt, time, ctx) {
 			const other = bird.feet[i === 0 ? 1 : 0]
 			const distanceToShoulder = bird.shoulder.dist(foot.pos)
 			if (
-				!bird.lerp
-				&& !foot.lerp
+				!foot.lerp
 				&& (
 					distanceToShoulder > .98 * (UPPER_ARM_LENGTH + FOREARM_LENGTH)
 					|| (
@@ -169,7 +170,7 @@ function updateBird(mousePos, bird, dt, time, ctx) {
 						isRunning
 						&& (
 							!other.lerp
-							|| time - other.lerp.start > 0.8 * (other.lerp.end - other.lerp.start)
+							|| time - other.lerp.start > 0.9 * (other.lerp.end - other.lerp.start)
 						)
 						&& distanceToShoulder > (UPPER_ARM_LENGTH + FOREARM_LENGTH) * Math.min(1, Math.abs(bird.speed) / 7)
 					)
@@ -177,7 +178,9 @@ function updateBird(mousePos, bird, dt, time, ctx) {
 			) {
 				const end = distanceToShoulder > .98 * (UPPER_ARM_LENGTH + FOREARM_LENGTH)
 					? time + STEP_DURATION
-					: time + STEP_DURATION / Math.max(1, Math.abs(bird.speed) / 4)
+					: other.lerp
+						? time + STEP_DURATION / Math.max(1, Math.abs(bird.speed) / 3)
+						: time + STEP_DURATION / Math.max(1, Math.abs(bird.speed) / 4)
 				foot.lerp = {
 					start: time,
 					end,

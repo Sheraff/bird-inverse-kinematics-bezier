@@ -7,7 +7,6 @@ type Bird = {
 	head: Head
 	shoulder: Vector
 	neck: Vector
-	lerp: null | Lerp
 	speed: number
 }
 
