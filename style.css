@@ -2,12 +2,13 @@ body {
 	margin: 0;
 	background: #444;
 	color: white;
+	touch-action: none;
 }
 
 canvas {
 	box-shadow: 0 0 0 1px black;
 	width: 100vw;
-	height: 100vh;
+	height: var(--svh, 100vh);
 }
 
 form {
