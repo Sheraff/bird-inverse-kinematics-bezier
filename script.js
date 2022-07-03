@@ -8,6 +8,7 @@ const FOOT_HEIGHT = 6
 const BODY_RADIUS = 22
 const BEAK_LENGTH = 40
 const STEP_DURATION = 400
+const SHOW_GEOMETRY = true
 
 const canvas = document.querySelector('canvas')
 if(!canvas)
@@ -49,10 +50,14 @@ void function (ctx) {
 		shoulder: new Vector(
 			startX - 1 * BODY_RADIUS / 2,
 			startY + BODY_RADIUS
-		)
+		),
+		neck: new Vector(
+			startX + 1 * BODY_RADIUS * Math.cos(Math.PI / 4),
+			startY - BODY_RADIUS * Math.cos(Math.PI / 4),
+		),
 	}
 	/** @type {Vector} */
-	const mousePos = new Vector(bird.pos.x, bird.pos.y)
+	const mousePos = new Vector(bird.pos.x + 1, bird.pos.y)
 	update(ctx, mousePos, bird)
 	draw(ctx, mousePos, bird)
 }(ctx)
@@ -84,7 +89,7 @@ function draw(ctx, mousePos, bird) {
 			const delta = lastTime ? time - lastTime : 0
 			updateBird(mousePos, bird, delta, time, ctx)
 			ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
-			drawBird(ctx, bird)
+			drawBird(ctx, bird, mousePos)
 			loop(time)
 		})
 	}
@@ -100,11 +105,13 @@ function draw(ctx, mousePos, bird) {
  */
 function updateBird(mousePos, bird, dt, time, ctx) {
 	const speed = (mousePos.x - bird.pos.x) * dt / 1000
+	const direction = Math.sign(speed)
+	const reverse = bird.direction !== direction
 
 	// Update body
 	{
 		bird.pos.x += speed
-		bird.direction = Math.sign(speed)
+		bird.direction = direction
 		bird.pos.y = ctx.canvas.height - (UPPER_ARM_LENGTH + FOREARM_LENGTH) * .9 - Math.sin(time / 500) * 5 + Math.abs(speed) * 3
 		bird.shoulder.x = bird.pos.x - bird.direction * BODY_RADIUS / 2
 		bird.shoulder.y = bird.pos.y + BODY_RADIUS
@@ -112,43 +119,14 @@ function updateBird(mousePos, bird, dt, time, ctx) {
 
 	// Update feet
 	{
-		// if (Math.abs(speed) > 5 || !bird.feet.some(foot => foot.lerp)) {
-		// 	const which = (bird.feet[0].pos.x < bird.feet[1].pos.x) === (bird.direction === 1)
-		// 	const furthest = which ? bird.feet[0] : bird.feet[1]
-		// 	const other = which ? bird.feet[1] : bird.feet[0]
-		// 	if (
-		// 		!furthest.lerp
-		// 		&& (
-		// 			bird.shoulder.dist(furthest.pos) > .9 * (UPPER_ARM_LENGTH + FOREARM_LENGTH)
-		// 			|| (
-		// 				(!other.lerp || time - other.lerp.start > 0.9 * (other.lerp.end - other.lerp.start))
-		// 				// && !other.lerp
-		// 				&& Math.abs(bird.shoulder.x - furthest.pos.x) > BODY_RADIUS * 2
-		// 				&& bird.shoulder.dist(furthest.pos) > (UPPER_ARM_LENGTH + FOREARM_LENGTH) * Math.min(1, Math.abs(speed) / 10)
-		// 			)
-		// 		)
-		// 	) {
-		// 		furthest.lerp = {
-		// 			start: time,
-		// 			end: time + STEP_DURATION / Math.max(1, Math.abs(speed) / 4),
-		// 			from: new Vector(furthest.pos.x, furthest.pos.y),
-		// 			to: new Vector(
-		// 				bird.pos.x - bird.direction * BODY_RADIUS * 1 * Math.abs(speed / 10),
-		// 				furthest.pos.y - 30 + Math.abs(speed),
-		// 			),
-		// 			meta: {
-		// 				bodyX: bird.pos.x,
-		// 			}
-		// 		}
-		// 	}
-		// }
 		const furthest = (bird.feet[0].pos.x < bird.feet[1].pos.x) === (bird.direction === 1)
 			? 0 : 1
 		bird.feet.forEach((foot, i) => {
 			const other = bird.feet[i === 0 ? 1 : 0]
 			const distanceToShoulder = bird.shoulder.dist(foot.pos)
 			if (
-				!foot.lerp
+				!bird.lerp
+				&& !foot.lerp
 				&& (
 					distanceToShoulder > .98 * (UPPER_ARM_LENGTH + FOREARM_LENGTH)
 					|| (
@@ -167,9 +145,12 @@ function updateBird(mousePos, bird, dt, time, ctx) {
 					)
 				)
 			) {
+				const end = distanceToShoulder > .98 * (UPPER_ARM_LENGTH + FOREARM_LENGTH)
+					? time + STEP_DURATION
+					: time + STEP_DURATION / Math.max(1, Math.abs(speed) / 4)
 				foot.lerp = {
 					start: time,
-					end: time + STEP_DURATION / Math.max(1, Math.abs(speed) / 4),
+					end,
 					from: new Vector(foot.pos.x, ctx.canvas.height - FOOT_HEIGHT),
 					to: new Vector(
 						bird.shoulder.x - bird.direction * BODY_RADIUS * (-1 + Math.abs(speed / 5)),
@@ -196,11 +177,18 @@ function updateBird(mousePos, bird, dt, time, ctx) {
 
 	// Update head
 	{
+		if(reverse) {
+			bird.head.lerp = null
+			bird.head.pos.x = bird.pos.x
+		}
 		bird.head.pos.y = bird.pos.y - (UPPER_ARM_LENGTH + FOREARM_LENGTH) * .75 + Math.sin(time / 500 - 300) * 7 + Math.abs(speed) * 3
-		bird.head.nape.x = -BODY_RADIUS * 3 + BODY_RADIUS * Math.min(1, Math.abs(speed) / 4)
-		bird.head.nape.y = (UPPER_ARM_LENGTH + FOREARM_LENGTH) * .3 - (UPPER_ARM_LENGTH + FOREARM_LENGTH) * .1 * Math.max(1, Math.abs(speed) / 4)
-		bird.head.sternum.x = -BODY_RADIUS * 3 + BODY_RADIUS * Math.min(1, Math.abs(speed) / 4)
-		bird.head.sternum.y = BODY_RADIUS * 3 - BODY_RADIUS * Math.min(1, Math.abs(speed) / 4)
+		bird.head.nape.x = BODY_RADIUS * (-3 + Math.min(1, Math.abs(speed) / 4))
+		bird.head.nape.y = (UPPER_ARM_LENGTH + FOREARM_LENGTH) * (.2 - .1 * Math.max(1, Math.abs(speed) / 4))
+		bird.head.sternum.x = BODY_RADIUS * -3
+		bird.head.sternum.y = BODY_RADIUS * (3 - Math.max(1, Math.abs(speed) / 3))
+		const neckSpeedCoef = (1 - Math.abs(speed) / 10)
+		bird.neck.x = bird.pos.x + bird.direction * BODY_RADIUS * Math.cos(Math.PI / 3 * neckSpeedCoef)
+		bird.neck.y = bird.pos.y - BODY_RADIUS * Math.sin(Math.PI / 3 * neckSpeedCoef)
 		if (bird.head.lerp) {
 			const t = (time - bird.head.lerp.start) / (bird.head.lerp.end - bird.head.lerp.start)
 			if(t >= 1) {
@@ -213,7 +201,7 @@ function updateBird(mousePos, bird, dt, time, ctx) {
 				start: time,
 				end: time + STEP_DURATION / Math.max(1, Math.abs(speed)),
 				from: new Vector(bird.head.pos.x, 0),
-				to: new Vector(bird.pos.x + bird.direction * BODY_RADIUS * 3, 0),
+				to: new Vector(bird.pos.x + bird.direction * BODY_RADIUS * (3 + Math.abs(speed / 10)), 0),
 			}
 		} else if(Math.abs(speed) >= 6) {
 			bird.head.pos.x += speed + (dt / 1000) * (speed) * Math.abs(bird.head.pos.x - bird.pos.x)
@@ -228,7 +216,7 @@ function updateBird(mousePos, bird, dt, time, ctx) {
  * @param {CanvasRenderingContext2D} ctx
  * @param {Bird} bird
  */
-function drawBird(ctx, bird) {
+function drawBird(ctx, bird, mousePos) {
 	const primary = '#777'
 	const secondary = '#111'
 
@@ -257,20 +245,33 @@ function drawBird(ctx, bird) {
 		ctx.lineTo(foot.pos.x + 8, foot.pos.y + FOOT_HEIGHT)
 		ctx.closePath()
 		ctx.fill()
+
+		if(SHOW_GEOMETRY) {
+			const strokeStyle = ctx.strokeStyle
+			const lineWidth = ctx.lineWidth
+			ctx.lineWidth = 1
+			ctx.strokeStyle = '#f005'
+			ctx.beginPath()
+			ctx.arc(bird.shoulder.x, bird.shoulder.y, UPPER_ARM_LENGTH, 0, 2 * Math.PI)
+			ctx.stroke()
+			ctx.strokeStyle = '#0f05'
+			ctx.beginPath()
+			ctx.arc(foot.pos.x, foot.pos.y, FOREARM_LENGTH, 0, 2 * Math.PI)
+			ctx.stroke()
+			ctx.strokeStyle = strokeStyle
+			ctx.lineWidth = lineWidth
+		}
 	})
 
 	// neck
 	{
 		ctx.lineWidth = 5
-		const sternumAnchor = new Vector(
-			bird.pos.x + bird.direction * BODY_RADIUS * Math.cos(Math.PI / 4),
-			bird.pos.y - BODY_RADIUS * Math.cos(Math.PI / 4),
-		)
+		
 		const sternumPoint = new Point(
-			sternumAnchor.x,
-			sternumAnchor.y,
-			sternumAnchor.x + bird.direction * bird.head.sternum.x,
-			sternumAnchor.y + bird.head.sternum.y
+			bird.neck.x,
+			bird.neck.y,
+			bird.neck.x + bird.direction * bird.head.sternum.x,
+			bird.neck.y + bird.head.sternum.y
 		)
 		const napePoint = new Point(
 			bird.head.pos.x,
@@ -280,6 +281,40 @@ function drawBird(ctx, bird) {
 		)
 		const neckCurve = new Curve(sternumPoint, napePoint)
 		neckCurve.draw(ctx)
+
+		if(SHOW_GEOMETRY) {
+			const strokeStyle = ctx.strokeStyle
+			const lineWidth = ctx.lineWidth
+			const fillStyle = ctx.fillStyle
+			ctx.lineWidth = 1
+			ctx.strokeStyle = '#00f5'
+			ctx.fillStyle = '#00f5'
+			
+			ctx.beginPath()
+			ctx.arc(sternumPoint.center.x, sternumPoint.center.y, 5, 0, Math.PI * 2)
+			ctx.fill()
+			ctx.beginPath()
+			ctx.arc(sternumPoint.hAfter.x, sternumPoint.hAfter.y, 5, 0, Math.PI * 2)
+			ctx.fill()
+			ctx.beginPath()
+			ctx.moveTo(sternumPoint.center.x, sternumPoint.center.y)
+			ctx.lineTo(sternumPoint.hAfter.x, sternumPoint.hAfter.y)
+			ctx.stroke()
+			ctx.beginPath()
+			ctx.arc(napePoint.center.x, napePoint.center.y, 5, 0, Math.PI * 2)
+			ctx.fill()
+			ctx.beginPath()
+			ctx.arc(napePoint.hBefore.x, napePoint.hBefore.y, 5, 0, Math.PI * 2)
+			ctx.fill()
+			ctx.beginPath()
+			ctx.moveTo(napePoint.center.x, napePoint.center.y)
+			ctx.lineTo(napePoint.hBefore.x, napePoint.hBefore.y)
+			ctx.stroke()
+
+			ctx.strokeStyle = strokeStyle
+			ctx.lineWidth = lineWidth
+			ctx.fillStyle = fillStyle
+		}
 	}
 
 	// head
@@ -290,12 +325,20 @@ function drawBird(ctx, bird) {
 		ctx.arc(bird.head.pos.x, bird.head.pos.y, headRadius, 0, 2 * Math.PI)
 		ctx.fill()
 		// beak
+		const angleToMouse = Math.atan2(mousePos.y - bird.head.pos.y, mousePos.x - bird.head.pos.x) + (bird.direction === -1 ? Math.PI : 0)
+		const beakAngle = bird.direction === -1
+			? angleToMouse < Math.PI ? Math.min(Math.PI / 4, angleToMouse) : Math.max(7 * Math.PI / 4, angleToMouse)
+			: Math.max(-Math.PI / 4, Math.min(Math.PI / 4, angleToMouse))
+		ctx.save()
+		ctx.translate(bird.head.pos.x, bird.head.pos.y)
+		ctx.rotate(beakAngle)
 		ctx.beginPath()
-		ctx.moveTo(bird.head.pos.x, bird.head.pos.y - headRadius / 2)
-		ctx.lineTo(bird.head.pos.x + bird.direction * (headRadius + BEAK_LENGTH), bird.head.pos.y)
-		ctx.lineTo(bird.head.pos.x, bird.head.pos.y + headRadius / 2)
+		ctx.moveTo(0, 0 - headRadius / 2)
+		ctx.lineTo(bird.direction * (headRadius + BEAK_LENGTH), 0)
+		ctx.lineTo(0, 0 + headRadius / 2)
 		ctx.closePath()
 		ctx.fill()
+		ctx.restore()
 		// eye
 		ctx.fillStyle = secondary
 		ctx.beginPath()
@@ -306,9 +349,11 @@ function drawBird(ctx, bird) {
 
 	// body
 	{
+		// torso
 		ctx.beginPath()
 		ctx.arc(bird.pos.x, bird.pos.y, BODY_RADIUS, 0, 2 * Math.PI)
 		ctx.fill()
+		// tail
 		ctx.beginPath()
 		ctx.moveTo(bird.pos.x - bird.direction * BODY_RADIUS, bird.pos.y)
 		ctx.lineTo(bird.pos.x - bird.direction * BODY_RADIUS * 2, bird.pos.y + BODY_RADIUS)

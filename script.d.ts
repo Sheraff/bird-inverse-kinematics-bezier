@@ -6,6 +6,8 @@ type Bird = {
 	feet: [Foot, Foot]
 	head: Head
 	shoulder: Vector
+	neck: Vector
+	lerp: null | Lerp
 }
 
 type Foot = {
