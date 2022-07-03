@@ -123,11 +123,12 @@ function draw(ctx, mousePos, bird, formData) {
  * @param {CanvasRenderingContext2D} ctx
  */
 function updateBird(mousePos, bird, dt, time, ctx) {
-	bird.speed *= .96 ** (dt / 1000 * 60)
-	if (!bird.feet[0].lerp || !bird.feet[1].lerp) {
+	bird.speed *= .95 ** (dt / 1000 * 60)
+	const groundedCount = !bird.feet[0].lerp + !bird.feet[1].lerp
+	if (groundedCount > 0) {
 		const mouseDelta = mousePos.x - bird.pos.x
 		if(Math.abs(mouseDelta) > 100) {
-			bird.speed += (mouseDelta) / 9 * dt / 1000
+			bird.speed += (mouseDelta) / 8 * groundedCount * dt / 1000
 		}
 	}
 	bird.speed = Math.min(10, bird.speed)
