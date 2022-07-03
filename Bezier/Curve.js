@@ -1,7 +1,7 @@
 /** @typedef {import('./Point.js').default} Point */
 
 export default class Curve {
-	static resolution = 30
+	static resolution = 18
 
 	/** @param {...Point} points */
 	constructor(...points) {

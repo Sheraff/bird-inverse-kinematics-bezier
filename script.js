@@ -200,8 +200,8 @@ function updateBird(mousePos, bird, dt, time, ctx) {
 			bird.head.pos.x = bird.pos.x
 		}
 		bird.head.pos.y = bird.pos.y - (UPPER_ARM_LENGTH + FOREARM_LENGTH) * .75 + Math.sin(time / 500 - 300) * 7 + Math.abs(speed) * 3
-		bird.head.nape.x = BODY_RADIUS * (-3 + Math.min(1, Math.abs(speed) / 4))
-		bird.head.nape.y = (UPPER_ARM_LENGTH + FOREARM_LENGTH) * (.2 - .1 * Math.max(1, Math.abs(speed) / 4))
+		bird.head.nape.x = BODY_RADIUS * (-3 + Math.min(1, Math.abs(speed) / 5))
+		bird.head.nape.y = (UPPER_ARM_LENGTH + FOREARM_LENGTH) * (.4 - .15 * Math.max(1, Math.abs(speed) / 3.5))
 		bird.head.sternum.x = BODY_RADIUS * -3
 		bird.head.sternum.y = BODY_RADIUS * (3 - Math.max(1, Math.abs(speed) / 3))
 		const neckSpeedCoef = (1 - Math.abs(speed) / 10)
