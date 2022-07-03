@@ -8,6 +8,7 @@ type Bird = {
 	shoulder: Vector
 	neck: Vector
 	lerp: null | Lerp
+	speed: number
 }
 
 type Foot = {
