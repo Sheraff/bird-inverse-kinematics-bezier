@@ -63,11 +63,17 @@ void function (ctx) {
 			startY - BODY_RADIUS * Math.cos(Math.PI / 4),
 		),
 	}
+
+	const markers = [
+		new Vector(ctx.canvas.width + 5, ctx.canvas.height / 2),
+		new Vector(-5, ctx.canvas.height / 2),
+	]
+
 	/** @type {Vector} */
 	const mousePos = new Vector(bird.pos.x + 1, bird.pos.y)
 	ui(form, formData)
-	update(ctx, mousePos, bird)
-	draw(ctx, mousePos, bird, formData)
+	update(ctx, mousePos, bird, markers)
+	draw(ctx, mousePos, bird, markers, formData)
 }(ctx)
 
 function getFormData(form) {
@@ -88,11 +94,62 @@ function ui(form, formData) {
  * @param {Vector} mousePos
  * @param {Bird} bird
  */
-function update(ctx, mousePos, bird) {
+function update(ctx, mousePos, bird, markers) {
 	window.addEventListener('pointermove', event => {
 		mousePos.x = event.clientX
 		mousePos.y = event.clientY
 	})
+	function loop(lastTime) {
+		requestAnimationFrame((time) => {
+			const modifiedTime = time * SPEED
+			const delta = lastTime ? modifiedTime - lastTime : 0
+			updateBird(mousePos, bird, delta, modifiedTime, ctx)
+
+			// infinite scroll
+			{
+				if(
+					(bird.pos.x > ctx.canvas.width - 400 && bird.direction === 1)
+					|| (bird.pos.x < 400 && bird.direction === -1)
+				) {
+					const infiniteScrollSpeedMultiplier = bird.direction === 1
+						? 200 / (ctx.canvas.width - bird.pos.x)
+						: 200 / bird.pos.x
+					const offset = bird.speed * infiniteScrollSpeedMultiplier
+					
+					// bird
+					bird.pos.x -= offset
+					bird.feet.forEach(foot => {
+						foot.pos.x -= offset
+						if(foot.lerp) {
+							foot.lerp.from.x -= offset
+							foot.lerp.to.x -= offset
+							foot.lerp.meta.bodyX -= offset
+						}
+					})
+					bird.head.pos.x -= offset
+					if(bird.head.lerp) {
+						bird.head.lerp.from.x -= offset
+						bird.head.lerp.to.x -= offset
+					}
+					bird.shoulder.x -= offset
+					bird.neck.x -= offset
+
+					// markers
+					markers.forEach(marker => {
+						marker.x -= offset
+						if(marker.x < - ctx.canvas.width / 2) {
+							marker.x += ctx.canvas.width * 2
+						} else if(marker.x > ctx.canvas.width * 3 / 2) {
+							marker.x -= ctx.canvas.width * 2
+						}
+					})
+				}
+			}
+
+			loop(modifiedTime)
+		})
+	}
+	loop(0)
 }
 
 /**
@@ -100,21 +157,20 @@ function update(ctx, mousePos, bird) {
  * @param {Vector} mousePos
  * @param {Bird} bird
  */
-function draw(ctx, mousePos, bird, formData) {
-	/**
-	 * @param {number} lastTime
-	 */
-	function loop(lastTime) {
-		requestAnimationFrame((time) => {
-			const modifiedTime = time * SPEED
-			const delta = lastTime ? modifiedTime - lastTime : 0
-			updateBird(mousePos, bird, delta, modifiedTime, ctx)
+function draw(ctx, mousePos, bird, markers, formData) {
+	function loop() {
+		requestAnimationFrame(() => {
 			ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
 			drawBird(ctx, bird, mousePos, formData)
-			loop(modifiedTime)
+			markers.forEach((vec) => {
+				ctx.beginPath()
+				ctx.arc(vec.x, vec.y, 5, 0, Math.PI * 2)
+				ctx.fill()
+			})
+			loop()
 		})
 	}
-	loop(0)
+	loop()
 }
 
 /**
@@ -129,7 +185,7 @@ function updateBird(mousePos, bird, dt, time, ctx) {
 	const groundedCount = !bird.feet[0].lerp + !bird.feet[1].lerp
 	if (groundedCount > 0) {
 		const mouseDelta = mousePos.x - bird.pos.x
-		if(Math.abs(mouseDelta) > 100) {
+		if(Math.abs(mouseDelta) > 50) {
 			const maxSpeedImpulse = 150 + Math.max(0, Math.abs(bird.speed) - 4) * 50
 			const clampedMouseDelta = Math.sign(mouseDelta) * Math.min(maxSpeedImpulse, Math.abs(mouseDelta))
 			bird.speed += clampedMouseDelta / 8 * groundedCount * dt / 1000
