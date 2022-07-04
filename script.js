@@ -164,11 +164,12 @@ function draw(ctx, mousePos, bird, markers, formData) {
 			ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
 			drawBird(ctx, bird, mousePos, formData)
 			ctx.fillStyle = `#777${(Math.floor(markers.speedRatio * 16)).toString(16)}`
+			ctx.beginPath()
 			markers.forEach((vec) => {
-				ctx.beginPath()
-				ctx.arc(vec.x, vec.y, 5, 0, Math.PI * 2)
-				ctx.fill()
+				ctx.moveTo(0, 0)
+				ctx.arcVec(vec, 5, 0, Math.PI * 2)
 			})
+			ctx.fill()
 			loop()
 		})
 	}
