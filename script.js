@@ -190,12 +190,12 @@ function updateBird(mousePos, bird, dt, time, ctx) {
 		const mouseDelta = mousePos.x - bird.pos.x
 		if(Math.abs(mouseDelta) > 50) {
 			const maxSpeedImpulse = 150 + Math.max(0, Math.abs(bird.speed) - 4) * 50
-			const clampedMouseDelta = (mouseDelta >> 31 || 1) * Math.min(maxSpeedImpulse, Math.abs(mouseDelta))
+			const clampedMouseDelta = Math.sign(mouseDelta) * Math.min(maxSpeedImpulse, Math.abs(mouseDelta))
 			bird.speed += clampedMouseDelta / 8 * groundedCount**1.5 * dt / 1000
 		}
 	}
-	bird.speed = (bird.speed >> 31 || 1) * Math.min(BIRD_MAX_SPEED, Math.abs(bird.speed))
-	const direction = bird.speed >> 31 || 1
+	bird.speed = Math.sign(bird.speed) * Math.min(BIRD_MAX_SPEED, Math.abs(bird.speed))
+	const direction = Math.sign(bird.speed) || 1
 	const reverse = bird.direction !== direction
 	const isRunning = Math.abs(bird.speed) >= 7
 
