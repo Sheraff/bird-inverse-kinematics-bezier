@@ -348,8 +348,7 @@ function drawBird(ctx, bird, mousePos, formData) {
 		ctx.fill()
 
 		if(formData.geometry) {
-			const strokeStyle = ctx.strokeStyle
-			const lineWidth = ctx.lineWidth
+			ctx.save()
 			ctx.lineWidth = 1
 			ctx.strokeStyle = '#f005'
 			ctx.beginPath()
@@ -359,8 +358,7 @@ function drawBird(ctx, bird, mousePos, formData) {
 			ctx.beginPath()
 			ctx.arc(...foot.pos, FOREARM_LENGTH, 0, 2 * Math.PI)
 			ctx.stroke()
-			ctx.strokeStyle = strokeStyle
-			ctx.lineWidth = lineWidth
+			ctx.restore()
 		}
 	})
 
@@ -382,9 +380,7 @@ function drawBird(ctx, bird, mousePos, formData) {
 		ctx.stroke()
 
 		if(formData.geometry) {
-			const strokeStyle = ctx.strokeStyle
-			const lineWidth = ctx.lineWidth
-			const fillStyle = ctx.fillStyle
+			ctx.save()
 			ctx.lineWidth = 1
 			ctx.strokeStyle = '#00f5'
 			ctx.fillStyle = '#00f5'
@@ -410,9 +406,7 @@ function drawBird(ctx, bird, mousePos, formData) {
 			ctx.lineTo(...napeHandle)
 			ctx.stroke()
 
-			ctx.strokeStyle = strokeStyle
-			ctx.lineWidth = lineWidth
-			ctx.fillStyle = fillStyle
+			ctx.restore()
 		}
 	}
 
@@ -465,16 +459,14 @@ function drawBird(ctx, bird, mousePos, formData) {
 		ctx.fill()
 
 		if(formData.geometry) {
-			const strokeStyle = ctx.strokeStyle
-			const lineWidth = ctx.lineWidth
+			ctx.save()
 			ctx.lineWidth = 1
 			ctx.strokeStyle = '#fa05'
 			ctx.beginPath()
 			ctx.moveTo(...bird.pos)
 			ctx.lineTo(...bird.pos.add(new Vector(bird.speed * 10, 0)))
 			ctx.stroke()
-			ctx.strokeStyle = strokeStyle
-			ctx.lineWidth = lineWidth
+			ctx.restore()
 		}
 	}
 }
