@@ -21,6 +21,7 @@ canvas.height = window.innerHeight
 const ctx = canvas.getContext('2d')
 if(!ctx)
 	throw new Error('No context found')
+addVectorMethods(ctx)
 
 const form = document.querySelector('form')
 if(!form)
@@ -331,19 +332,19 @@ function drawBird(ctx, bird, mousePos, formData) {
 		const elbow = inverseKinematicsWithTwoJoints(bird.shoulder, foot.pos, UPPER_ARM_LENGTH, FOREARM_LENGTH, -bird.direction)
 		// arms
 		ctx.beginPath()
-		ctx.moveTo(...bird.shoulder)
-		ctx.lineTo(...elbow)
-		ctx.lineTo(...foot.pos)
+		ctx.moveToVec(bird.shoulder)
+		ctx.lineToVec(elbow)
+		ctx.lineToVec(foot.pos)
 		ctx.stroke()
 		// elbow
 		ctx.beginPath()
-		ctx.arc(...elbow, 5, 0, 2 * Math.PI)
+		ctx.arcVec(elbow, 5, 0, 2 * Math.PI)
 		ctx.fill()
 		// foot
 		ctx.beginPath()
-		ctx.moveTo(...foot.pos.add(new Vector(0, -3)))
-		ctx.lineTo(...foot.pos.add(new Vector(-8, FOOT_HEIGHT)))
-		ctx.lineTo(...foot.pos.add(new Vector(8, FOOT_HEIGHT)))
+		ctx.moveToVec(foot.pos.add(new Vector(0, -3)))
+		ctx.lineToVec(foot.pos.add(new Vector(-8, FOOT_HEIGHT)))
+		ctx.lineToVec(foot.pos.add(new Vector(8, FOOT_HEIGHT)))
 		ctx.closePath()
 		ctx.fill()
 
@@ -352,11 +353,11 @@ function drawBird(ctx, bird, mousePos, formData) {
 			ctx.lineWidth = 1
 			ctx.strokeStyle = '#f005'
 			ctx.beginPath()
-			ctx.arc(...bird.shoulder, UPPER_ARM_LENGTH, 0, 2 * Math.PI)
+			ctx.arcVec(bird.shoulder, UPPER_ARM_LENGTH, 0, 2 * Math.PI)
 			ctx.stroke()
 			ctx.strokeStyle = '#0f05'
 			ctx.beginPath()
-			ctx.arc(...foot.pos, FOREARM_LENGTH, 0, 2 * Math.PI)
+			ctx.arcVec(foot.pos, FOREARM_LENGTH, 0, 2 * Math.PI)
 			ctx.stroke()
 			ctx.restore()
 		}
@@ -371,12 +372,8 @@ function drawBird(ctx, bird, mousePos, formData) {
 		const napeHandle = bird.head.pos.add(bird.head.nape.entrywise(directionVector))
 
 		ctx.beginPath()
-		ctx.moveTo(...bird.neck)
-		ctx.bezierCurveTo(
-			...sternumHandle,
-			...napeHandle,
-			...bird.head.pos,
-		)
+		ctx.moveToVec(bird.neck)
+		ctx.bezierCurveToVec(sternumHandle, napeHandle, bird.head.pos)
 		ctx.stroke()
 
 		if(formData.geometry) {
@@ -386,20 +383,20 @@ function drawBird(ctx, bird, mousePos, formData) {
 			ctx.fillStyle = '#00f5'
 			
 			ctx.beginPath()
-			ctx.arc(...bird.neck, 5, 0, Math.PI * 2)
+			ctx.arcVec(bird.neck, 5, 0, Math.PI * 2)
 			ctx.moveTo(0, 0)
-			ctx.arc(...sternumHandle, 5, 0, Math.PI * 2)
+			ctx.arcVec(sternumHandle, 5, 0, Math.PI * 2)
 			ctx.moveTo(0, 0)
-			ctx.arc(...bird.head.pos, 5, 0, Math.PI * 2)
+			ctx.arcVec(bird.head.pos, 5, 0, Math.PI * 2)
 			ctx.moveTo(0, 0)
-			ctx.arc(...napeHandle, 5, 0, Math.PI * 2)
+			ctx.arcVec(napeHandle, 5, 0, Math.PI * 2)
 			ctx.fill()
 
 			ctx.beginPath()
-			ctx.moveTo(...bird.neck)
-			ctx.lineTo(...sternumHandle)
-			ctx.moveTo(...bird.head.pos)
-			ctx.lineTo(...napeHandle)
+			ctx.moveToVec(bird.neck)
+			ctx.lineToVec(sternumHandle)
+			ctx.moveToVec(bird.head.pos)
+			ctx.lineToVec(napeHandle)
 			ctx.stroke()
 
 			ctx.restore()
@@ -411,7 +408,7 @@ function drawBird(ctx, bird, mousePos, formData) {
 		const headRadius = BODY_RADIUS / 2
 		// face
 		ctx.beginPath()
-		ctx.arc(...bird.head.pos, headRadius + 2, 0, 2 * Math.PI)
+		ctx.arcVec(bird.head.pos, headRadius + 2, 0, 2 * Math.PI)
 		ctx.fill()
 		// beak
 		const angleToMouse = (Math.atan2(mousePos.y - bird.head.pos.y, mousePos.x - bird.head.pos.x) + Math.PI * 2) % (Math.PI * 2)
@@ -419,7 +416,7 @@ function drawBird(ctx, bird, mousePos, formData) {
 			? Math.max(Math.PI * 3 / 4, Math.min(Math.PI * 5 / 4, angleToMouse))
 			: angleToMouse < Math.PI ? Math.min(Math.PI / 4, angleToMouse) : Math.max(Math.PI * 7 / 4, angleToMouse)
 		ctx.save()
-		ctx.translate(...bird.head.pos)
+		ctx.translateVec(bird.head.pos)
 		ctx.rotate(beakAngle)
 		ctx.beginPath()
 		ctx.moveTo(0, 0 - headRadius / 2)
@@ -435,7 +432,7 @@ function drawBird(ctx, bird, mousePos, formData) {
 		))
 		ctx.fillStyle = secondary
 		ctx.beginPath()
-		ctx.arc(...eyeOffset, headRadius / 3, 0, 2 * Math.PI)
+		ctx.arcVec(eyeOffset, headRadius / 3, 0, 2 * Math.PI)
 		ctx.fill()
 		ctx.fillStyle = primary
 	}
@@ -444,13 +441,13 @@ function drawBird(ctx, bird, mousePos, formData) {
 	{
 		// torso
 		ctx.beginPath()
-		ctx.arc(...bird.pos, BODY_RADIUS + 2, 0, 2 * Math.PI)
+		ctx.arcVec(bird.pos, BODY_RADIUS + 2, 0, 2 * Math.PI)
 		ctx.fill()
 		// tail
 		ctx.beginPath()
-		ctx.moveTo(...bird.pos.add(new Vector(-bird.direction * BODY_RADIUS, 0)))
-		ctx.lineTo(...bird.pos.add(new Vector(-bird.direction * BODY_RADIUS * 2, BODY_RADIUS)))
-		ctx.lineTo(...bird.pos.add(new Vector(0, BODY_RADIUS)))
+		ctx.moveToVec(bird.pos.add(new Vector(-bird.direction * BODY_RADIUS, 0)))
+		ctx.lineToVec(bird.pos.add(new Vector(-bird.direction * BODY_RADIUS * 2, BODY_RADIUS)))
+		ctx.lineToVec(bird.pos.add(new Vector(0, BODY_RADIUS)))
 		ctx.closePath()
 		ctx.fill()
 
@@ -459,8 +456,8 @@ function drawBird(ctx, bird, mousePos, formData) {
 			ctx.lineWidth = 1
 			ctx.strokeStyle = '#fa05'
 			ctx.beginPath()
-			ctx.moveTo(...bird.pos)
-			ctx.lineTo(...bird.pos.add(new Vector(bird.speed * 10, 0)))
+			ctx.moveToVec(bird.pos)
+			ctx.lineToVec(bird.pos.add(new Vector(bird.speed * 10, 0)))
 			ctx.stroke()
 			ctx.restore()
 		}
@@ -502,4 +499,18 @@ function easeSin(t) {
 	const elbowX = shoulder.x - upperJointLength * Math.cos(angle) * direction
 	const elbowY = shoulder.y + upperJointLength * Math.sin(angle)
 	return new Vector(elbowX, elbowY)
+}
+
+function addVectorMethods(ctx) {
+	patchCanvasFunction(ctx, 'moveTo')
+	patchCanvasFunction(ctx, 'lineTo')
+	patchCanvasFunction(ctx, 'arc')
+	patchCanvasFunction(ctx, 'translate')
+	patchCanvasFunction(ctx, 'bezierCurveTo')
+}
+
+function patchCanvasFunction(ctx, name) {
+	ctx[`${name}Vec`] = (...args) => {
+		ctx[name](...args.flatMap(arg => arg instanceof Vector ? [...arg] : arg))
+	}
 }
