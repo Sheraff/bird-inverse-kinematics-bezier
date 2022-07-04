@@ -15,16 +15,17 @@ export default class Vector {
 	sub(v) {
 		return new Vector(this.x - v.x, this.y - v.y)
 	}
-	/** @param {number} n */
-	mul(n) {
-		return new Vector(this.x * n, this.y * n)
-	}
-	/** @param {number} n */
-	div(n) {
-		return new Vector(this.x / n, this.y / n)
-	}
 	/** @param {Vector} v */
 	dist(v) {
 		return Math.hypot(this.x - v.x, this.y - v.y)
+	}
+	/** @param {Vector} v */
+	entrywise(v) {
+		return new Vector(this.x * v.x, this.y * v.y)
+	}
+
+	*[Symbol.iterator] () {
+		yield this.x
+		yield this.y
 	}
 }

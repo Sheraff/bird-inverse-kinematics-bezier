@@ -1,13 +1,13 @@
-import Vector from "./Bezier/Vector"
+import Vector from "./Classes/Vector"
 
-type Bird = {
+export type Bird = {
 	direction: 1 | -1
+	speed: number
 	pos: Vector
 	feet: [Foot, Foot]
 	head: Head
 	shoulder: Vector
 	neck: Vector
-	speed: number
 }
 
 type Foot = {
@@ -27,5 +27,5 @@ type Lerp = {
 	end: number
 	from: Vector
 	to: Vector
-	meta: any
+	meta?: any
 }
